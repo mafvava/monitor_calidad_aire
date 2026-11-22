@@ -12,7 +12,7 @@
 #define BUZZER_PIN 25
 #define LED_VERDE_PIN 26
 #define LED_ROJO_PIN 27
-#define FAN_PIN 18
+#define FAN_PIN 187
 
 // -------------------- COMUNICACION --------------------
 

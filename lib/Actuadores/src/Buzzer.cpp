@@ -1,20 +1,32 @@
-
 #include <Arduino.h>
 #include "Buzzer.h"
 
 Buzzer::Buzzer(int pin) : Actuador(pin) {}
 
 void Buzzer::iniciar() {
-    pinMode(pin, OUTPUT);
+    ledcSetup(canalPWM, 2500, 8);
+    ledcAttachPin(pin, canalPWM);
+
+    pwmConfigurado = true;
+
     apagar();
 }
 
 void Buzzer::encender() {
+    if (!pwmConfigurado) {
+        iniciar();
+    }
+
     estado = true;
-    digitalWrite(pin, HIGH);
+
+    // Generar sonido a 2500 Hz
+    ledcWriteTone(canalPWM, 2500);
 }
 
 void Buzzer::apagar() {
     estado = false;
-    digitalWrite(pin, LOW);
+
+    if (pwmConfigurado) {
+        ledcWriteTone(canalPWM, 0);
+    }
 }

@@ -3,21 +3,16 @@
 
 #include "configuracion.h"
 
-// Libreria de sensores
 #include "Sensor.h"
 #include "SensorMQ135.h"
 #include "SensorDHT11.h"
 
-// Libreria de actuadores
 #include "Actuador.h"
 #include "Buzzer.h"
 #include "LED.h"
 #include "Ventilador.h"
 
-// Libreria de comunicacion
 #include "ComunicacionSerial.h"
-
-// -------------------- OBJETOS DEL SISTEMA --------------------
 
 // Sensores
 SensorMQ135 sensorGases(MQ135_PIN);
@@ -29,11 +24,10 @@ LED ledVerde(LED_VERDE_PIN);
 LED ledRojo(LED_ROJO_PIN);
 Ventilador ventilador(FAN_PIN);
 
-// Comunicacion
+// Comunicación
 ComunicacionSerial comunicacion;
 
-// -------------------- POLIMORFISMO --------------------
-
+// Polimorfismo
 Sensor* sensores[] = {
     &sensorGases,
     &sensorClima
@@ -46,18 +40,14 @@ Actuador* actuadores[] = {
     &ventilador
 };
 
-// -------------------- VARIABLES DEL SISTEMA --------------------
-
+// Variables
 int umbralGases = UMBRAL_GASES_INICIAL;
-
 bool modoAutomatico = true;
-
 String estadoGeneral = "NORMAL";
 
 unsigned long tiempoAnterior = 0;
 
-// -------------------- INICIALIZACION --------------------
-
+// Inicialización
 void iniciarSensores() {
     for (Sensor* sensor : sensores) {
         sensor->iniciar();
@@ -70,29 +60,23 @@ void iniciarActuadores() {
     }
 }
 
-// -------------------- LECTURA DE SENSORES --------------------
-
+// Lectura de sensores
 void actualizarSensores() {
     for (Sensor* sensor : sensores) {
         sensor->actualizar();
     }
 }
 
-// -------------------- CONTROL AUTOMATICO --------------------
-
+// Control automático
 void controlarAutomatico() {
-
     if (sensorGases.getLectura() >= umbralGases) {
-
         estadoGeneral = "ALERTA";
 
         buzzer.encender();
         ledVerde.apagar();
         ledRojo.encender();
         ventilador.encender();
-
     } else {
-
         estadoGeneral = "NORMAL";
 
         buzzer.apagar();
@@ -102,74 +86,61 @@ void controlarAutomatico() {
     }
 }
 
-// -------------------- ACTUALIZACION DE SALIDAS --------------------
-
-void actualizarSalidas() {
-
-    if (buzzer.getEstado()) {
-        buzzer.encender();
-    } else {
-        buzzer.apagar();
-    }
-
-    if (ventilador.getEstado()) {
-        ventilador.encender();
-    } else {
-        ventilador.apagar();
-    }
-}
-
-// -------------------- PROCESAMIENTO DE COMANDOS --------------------
-
+// Control de actuadores en modo manual
 void procesarComando(String comando) {
-
     comando.trim();
 
     if (comando == "MODE,AUTO") {
-
         modoAutomatico = true;
-
+        return;
     }
-    else if (comando == "MODE,MANUAL") {
 
+    if (comando == "MODE,MANUAL") {
         modoAutomatico = false;
-
+        return;
     }
-    else if (comando.startsWith("THRESHOLD,")) {
 
+    if (comando.startsWith("THRESHOLD,")) {
         int nuevoUmbral = comando.substring(10).toInt();
 
         if (nuevoUmbral > 0 && nuevoUmbral <= 4095) {
             umbralGases = nuevoUmbral;
         }
-
+        return;
     }
-    else if (comando == "BUZZER,1" && !modoAutomatico) {
 
+    if (modoAutomatico) {
+        return;
+    }
+
+    if (comando == "BUZZER,1") {
         buzzer.encender();
-
     }
-    else if (comando == "BUZZER,0" && !modoAutomatico) {
-
+    else if (comando == "BUZZER,0") {
         buzzer.apagar();
-
     }
-    else if (comando == "FAN,1" && !modoAutomatico) {
-
+    else if (comando == "FAN,1") {
         ventilador.encender();
-
     }
-    else if (comando == "FAN,0" && !modoAutomatico) {
-
+    else if (comando == "FAN,0") {
         ventilador.apagar();
-
+    }
+    else if (comando == "LED_GREEN,1") {
+        ledVerde.encender();
+    }
+    else if (comando == "LED_GREEN,0") {
+        ledVerde.apagar();
+    }
+    else if (comando == "LED_RED,1") {
+        ledRojo.encender();
+    }
+    else if (comando == "LED_RED,0") {
+        ledRojo.apagar();
     }
 }
 
-// -------------------- RECEPCION DE COMANDOS --------------------
-
+// Recepción de comandos
 void recibirComandos() {
-
     String comando;
 
     if (comunicacion.recibirComando(comando)) {
@@ -177,10 +148,8 @@ void recibirComandos() {
     }
 }
 
-// -------------------- ENVIO DE DATOS --------------------
-
+// Envío de datos
 void enviarDatos() {
-
     comunicacion.enviarDatos(
         sensorGases.getLectura(),
         sensorClima.getTemperatura(),
@@ -195,10 +164,8 @@ void enviarDatos() {
     );
 }
 
-// -------------------- CONFIGURACION INICIAL --------------------
-
+// Configuración
 void setup() {
-
     comunicacion.iniciar(VELOCIDAD_SERIAL);
 
     iniciarSensores();
@@ -207,16 +174,13 @@ void setup() {
     tiempoAnterior = millis();
 }
 
-// -------------------- CICLO PRINCIPAL --------------------
-
+// Ciclo principal
 void loop() {
-
     recibirComandos();
 
     unsigned long tiempoActual = millis();
 
     if (tiempoActual - tiempoAnterior >= INTERVALO_LECTURA) {
-
         tiempoAnterior = tiempoActual;
 
         actualizarSensores();
